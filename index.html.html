@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>乡宴管家 · 宴席开单报价</title>
+<style>
+  /* ===== 基础重置 ===== */
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html{font-size:16px}
+  body{
+    font-family:'PingFang SC','Helvetica Neue',Arial,sans-serif;
+    background:#fdf5f0;
+    color:#3d2b1f;
+    min-height:100vh;
+    padding-bottom:120px;
+  }
+
+  /* ===== 柔和红色系变量 ===== */
+  :root{
+    --primary:#d4654a;
+    --primary-light:#e07a62;
+    --primary-lighter:#ea9682;
+    --primary-pale:#f4c4b8;
+    --primary-bg:#fdf0ec;
+    --accent:#c0503a;
+    --text:#3d2b1f;
+    --text-sub:#7a5c4f;
+    --text-muted:#b0988e;
+    --border:#f0d8d0;
+    --card:#fff;
+    --danger:#d04030;
+  }
+
+  /* ===== 顶部导航 ===== */
+  .top-nav{
+    background:linear-gradient(135deg,#d4654a 0%,#e07a62 40%,#ea9682 100%);
+    padding:14px 16px 12px;
+    position:sticky;top:0;z-index:100;
+    box-shadow:0 2px 10px rgba(212,101,74,.25);
+  }
+  .nav-row{
+    display:flex;align-items:center;justify-content:space-between;
+  }
+  .nav-left{
+    display:flex;align-items:center;
+  }
+  .nav-left .nav-logo{margin-right:10px}
+  .nav-logo{width:36px;height:36px;flex-shrink:0}
+  .nav-title{
+    font-size:20px;font-weight:700;color:#fff;
+    letter-spacing:.5px;text-shadow:0 1px 3px rgba(120,40,20,.15);
+  }
+  .nav-slogan{
+    font-size:12px;color:rgba(255,255,255,.92);
+    background:rgba(255,255,255,.28);
+    padding:4px 12px;border-radius:20px;
+    white-space:nowrap;
+    border:1px solid rgba(255,255,255,.2);
+  }
+
+  /* ===== 板块标题 ===== */
+  .section{margin:12px 12px 0}
+  .section-header{
+    display:flex;align-items:center;
+    background:linear-gradient(135deg,#d4654a,#e07a62);
+    color:#fff;border-radius:10px 10px 0 0;
+    padding:10px 14px;font-size:15px;font-weight:700;
+  }
+  .section-header .icon{font-size:18px;margin-right:8px}
+  .section-header .sub{font-size:11px;opacity:.85;margin-left:auto;font-weight:400}
+  .section-body{
+    background:#fff;
+    border:1px solid var(--border);border-top:none;
+    padding-bottom:4px;
+  }
+
+  /* ===== 图标卡（菜品 & 餐具通用） ===== */
+  .icon-card{
+    width:52px;height:52px;border-radius:12px;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    font-size:28px;margin-right:10px;
+    box-shadow:0 2px 8px rgba(0,0,0,.08);
+    border:2px solid transparent;
+    position:relative;overflow:hidden;
+  }
+  .icon-card::after{
+    content:'';position:absolute;top:0;left:0;right:0;height:50%;
+    background:linear-gradient(180deg,rgba(255,255,255,.35) 0%,rgba(255,255,255,0) 100%);
+    border-radius:10px 10px 0 0;pointer-events:none;
+  }
+
+  /* 菜品独立配色 */
+  .bg-chicken{background:linear-gradient(135deg,#fff3e0,#ffe0b2)}
+  .bg-fish{background:linear-gradient(135deg,#e0f2f1,#b2dfdb)}
+  .bg-goose{background:linear-gradient(135deg,#fce4ec,#f8bbd0)}
+  .bg-pigeon{background:linear-gradient(135deg,#efebe9,#d7ccc8)}
+  .bg-scallop{background:linear-gradient(135deg,#e8eaf6,#c5cae9)}
+  .bg-pork{background:linear-gradient(135deg,#fbe9e7,#ffccbc)}
+  .bg-shrimp{background:linear-gradient(135deg,#fff8e1,#ffecb3)}
+  .bg-tripe{background:linear-gradient(135deg,#f1f8e9,#dcedc8)}
+  .bg-veg{background:linear-gradient(135deg,#e8f5e9,#c8e6c9)}
+  .bg-soup{background:linear-gradient(135deg,#f3e5f5,#e1bee7)}
+  .bg-rice{background:linear-gradient(135deg,#fffde7,#fff9c4)}
+  .bg-dessert{background:linear-gradient(135deg,#fce4ec,#f48fb1)}
+
+  /* 餐具独立配色 */
+  .bg-chopstick{background:linear-gradient(135deg,#fff3e0,#ffe0b2)}
+  .bg-plate{background:linear-gradient(135deg,#e3f2fd,#bbdefb)}
+  .bg-table{background:linear-gradient(135deg,#efebe9,#d7ccc8)}
+  .bg-chair{background:linear-gradient(135deg,#f1f8e9,#dcedc8)}
+  .bg-cloth{background:linear-gradient(135deg,#fce4ec,#f8bbd0)}
+  .bg-glass{background:linear-gradient(135deg,#e8eaf6,#c5cae9)}
+  .bg-stove{background:linear-gradient(135deg,#fbe9e7,#ffccbc)}
+  .bg-canopy{background:linear-gradient(135deg,#e0f2f1,#b2dfdb)}
+
+  /* ===== 菜品列表 ===== */
+  .dish-list{padding:6px 0}
+  .dish-item{
+    display:flex;align-items:center;
+    padding:10px 12px;border-bottom:1px dashed var(--border);
+  }
+  .dish-item:last-child{border-bottom:none}
+  .dish-item.selected{background:#fdf5f0}
+  .dish-item.selected .icon-card{
+    border-color:var(--primary);
+    box-shadow:0 2px 12px rgba(212,101,74,.25);
+  }
+  .dish-info{flex:1;min-width:0}
+  .dish-name{font-size:14px;font-weight:600;color:var(--text);line-height:1.3}
+  .dish-desc{font-size:11px;color:var(--text-sub);margin-top:2px}
+  .dish-price{font-size:12px;color:var(--primary);font-weight:600;margin-top:2px}
+  .dish-price span{font-size:15px}
+  .dish-right{display:flex;flex-direction:column;align-items:flex-end;margin-left:8px}
+  .dish-sub{font-size:11px;color:var(--primary);font-weight:600;margin-bottom:5px}
+  .dish-sub.inactive{color:var(--text-muted)}
+  .qty-ctrl{
+    display:flex;align-items:center;
+    background:var(--primary-bg);border-radius:16px;overflow:hidden;
+    border:1px solid var(--border);
+  }
+  .qty-btn{
+    width:28px;height:26px;border:none;background:transparent;
+    font-size:16px;color:var(--primary);font-weight:700;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;
+  }
+  .qty-btn:active{background:var(--primary-pale)}
+  .qty-num{
+    min-width:28px;text-align:center;font-size:13px;
+    font-weight:700;color:var(--text);padding:0 4px;
+  }
+
+  /* ===== 餐具列表 ===== */
+  .utensil-list{padding:6px 0}
+  .utensil-item{
+    display:flex;align-items:center;
+    padding:10px 12px;border-bottom:1px dashed var(--border);
+  }
+  .utensil-item:last-child{border-bottom:none}
+  .utensil-info{flex:1;min-width:0}
+  .utensil-name{font-size:14px;font-weight:600;color:var(--text)}
+  .utensil-price{font-size:12px;color:var(--text-sub);margin-top:2px}
+  .utensil-right{display:flex;flex-direction:column;align-items:flex-end;margin-left:8px}
+  .utensil-sub{font-size:11px;color:var(--primary);font-weight:600;margin-bottom:5px}
+  .u-qty-ctrl{
+    display:flex;align-items:center;
+    background:var(--primary-bg);border-radius:16px;
+    border:1px solid var(--border);overflow:hidden;
+  }
+  .u-qty-btn{
+    width:28px;height:26px;border:none;background:transparent;
+    font-size:16px;color:var(--primary);font-weight:700;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .u-qty-btn:active{background:var(--primary-pale)}
+  .u-qty-num{
+    min-width:28px;text-align:center;font-size:13px;
+    font-weight:700;color:var(--text);padding:0 4px;
+  }
+
+  /* ===== 人员板块 ===== */
+  .staff-list{padding:6px 0}
+  .staff-item{
+    display:flex;align-items:center;
+    padding:10px 12px;border-bottom:1px dashed var(--border);
+  }
+  .staff-item:last-child{border-bottom:none}
+  .staff-avatar{
+    width:48px;height:48px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-size:24px;flex-shrink:0;border:2px solid var(--border);
+    margin-right:10px;
+  }
+  .staff-avatar.mc{background:linear-gradient(135deg,#fce4ec,#f8bbd0)}
+  .staff-avatar.chef{background:linear-gradient(135deg,#fff3e0,#ffe0b2)}
+  .staff-avatar.waiter{background:linear-gradient(135deg,#e8f5e9,#c8e6c9)}
+  .staff-avatar.assist{background:linear-gradient(135deg,#e3f2fd,#bbdefb)}
+  .staff-info{flex:1;min-width:0}
+  .staff-name{font-size:14px;font-weight:600;color:var(--text)}
+  .staff-desc{font-size:11px;color:var(--text-sub);margin-top:2px}
+  .staff-price-input{
+    display:flex;flex-direction:column;align-items:flex-end;margin-left:8px;
+  }
+  .staff-sub{font-size:11px;color:var(--primary);font-weight:600;margin-bottom:5px}
+  .price-edit{
+    display:flex;align-items:center;
+    background:var(--primary-bg);border:1px solid var(--border);
+    border-radius:8px;padding:3px 8px;
+  }
+  .price-edit .price-label{font-size:11px;color:var(--text-sub);margin-right:4px}
+  .price-input{
+    width:60px;border:none;background:transparent;
+    font-size:13px;font-weight:700;color:var(--primary);
+    text-align:right;outline:none;
+  }
+  .price-edit .price-unit{font-size:11px;color:var(--text-sub);margin-left:4px}
+
+  /* ===== 底部汇总悬浮栏 ===== */
+  .summary-bar{
+    position:fixed;bottom:0;left:0;right:0;
+    background:#fff;box-shadow:0 -3px 20px rgba(0,0,0,.1);
+    z-index:200;
+  }
+  .summary-mini{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:10px 16px 8px;cursor:pointer;
+  }
+  .summary-mini-left{display:flex;align-items:center}
+  .summary-mini-left .summary-total{margin-left:10px}
+  .summary-mini-total{font-size:22px;font-weight:800;color:var(--primary)}
+  .summary-mini-label{font-size:12px;color:var(--text-sub);margin-bottom:2px}
+  .summary-mini-items{font-size:11px;color:var(--text-muted)}
+  .share-btn{
+    background:linear-gradient(135deg,#d4654a,#e07a62);
+    color:#fff;border:none;border-radius:22px;
+    padding:10px 20px;font-size:14px;font-weight:700;
+    cursor:pointer;white-space:nowrap;
+    box-shadow:0 4px 12px rgba(212,101,74,.35);
+    margin-left:10px;
+  }
+  .share-btn:active{opacity:.8}
+
+  .summary-detail{
+    display:none;padding:0 16px 12px;
+    border-top:1px solid var(--border);
+  }
+  .summary-detail.open{display:block}
+  .summary-row{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:6px 0;border-bottom:1px dashed var(--border);font-size:13px;
+  }
+  .summary-row:last-child{border-bottom:none}
+  .summary-row.total-row{font-weight:800;font-size:15px;color:var(--primary);padding-top:8px;margin-top:2px}
+  .summary-row .label{color:var(--text-sub)}
+  .summary-row.total-row .label{color:var(--text)}
+
+  .toggle-arrow{font-size:10px;color:var(--text-muted);display:inline-block}
+  .toggle-arrow.up{}
+
+  /* ===== 弹窗 ===== */
+  .modal-mask{
+    position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.55);
+    z-index:500;display:none;
+  }
+  .modal-mask.show{display:block}
+  .modal-sheet{
+    background:#fff;border-radius:20px 20px 0 0;
+    width:100%;max-height:90vh;overflow-y:auto;
+    position:fixed;bottom:0;left:0;right:0;z-index:501;
+  }
+  .modal-header{
+    background:linear-gradient(135deg,#d4654a,#e07a62,#ea9682);
+    padding:16px 16px 14px;border-radius:20px 20px 0 0;
+    position:relative;
+  }
+  .modal-title{font-size:18px;font-weight:800;color:#fff;display:flex;align-items:center}
+  .modal-title svg{margin-right:8px}
+  .modal-sub{font-size:12px;color:rgba(255,255,255,.88);margin-top:3px}
+  .modal-close{
+    position:absolute;top:14px;right:16px;
+    width:30px;height:30px;border-radius:50%;
+    background:rgba(255,255,255,.28);border:none;
+    color:#fff;font-size:18px;cursor:pointer;
+  }
+
+  .quote-body{padding:16px}
+
+  .quote-brand{text-align:center;padding:16px 0 12px;border-bottom:2px solid var(--border);margin-bottom:14px}
+  .quote-brand-logo{width:48px;height:48px;margin:0 auto 6px}
+  .quote-brand-name{font-size:22px;font-weight:800;color:var(--primary);letter-spacing:2px}
+  .quote-brand-tag{font-size:12px;color:var(--text-sub);margin-top:4px}
+  .quote-no{display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted);margin-top:6px}
+
+  .quote-section{margin-bottom:14px}
+  .quote-section-title{font-size:13px;font-weight:700;color:#fff;background:linear-gradient(135deg,#d4654a,#e07a62);padding:5px 12px;border-radius:6px;margin-bottom:8px;display:inline-block}
+  .quote-item{display:flex;justify-content:space-between;align-items:center;padding:6px 4px;border-bottom:1px dashed var(--border);font-size:13px}
+  .quote-item:last-child{border-bottom:none}
+  .quote-item .name{color:var(--text);flex:1}
+  .quote-item .qty{color:var(--text-sub);font-size:12px;width:80px;text-align:center}
+  .quote-item .sub{color:var(--primary);font-weight:600;width:70px;text-align:right}
+
+  .quote-total-box{background:linear-gradient(135deg,#fdf5f0,#f8e8e0);border:2px solid var(--primary-pale);border-radius:12px;padding:14px;margin:14px 0}
+  .quote-total-row{display:flex;justify-content:space-between;font-size:13px;padding:4px 0}
+  .quote-total-row .label{color:var(--text-sub)}
+  .quote-total-row .val{color:var(--text);font-weight:600}
+  .quote-grand{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;border-top:2px dashed var(--primary-pale)}
+  .quote-grand-label{font-size:14px;font-weight:700;color:var(--text)}
+  .quote-grand-val{font-size:28px;font-weight:800;color:var(--primary)}
+  .quote-grand-val span{font-size:16px}
+
+  .quote-footer{text-align:center;font-size:11px;color:var(--text-muted);padding:8px 0 4px;border-top:1px solid var(--border);margin-top:10px}
+  .quote-footer strong{color:var(--primary)}
+
+  .quote-actions{display:flex;margin-top:14px;padding-bottom:20px}
+  .quote-actions .btn-outline{flex:1;padding:12px;border:2px solid var(--primary-light);border-radius:22px;color:var(--primary-light);font-size:14px;font-weight:700;background:#fff;cursor:pointer;text-align:center;margin-right:10px}
+  .quote-actions .btn-primary{flex:2;padding:12px;background:linear-gradient(135deg,#d4654a,#e07a62);border:none;border-radius:22px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 12px rgba(212,101,74,.35)}
+
+  /* toast */
+  .toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.72);color:#fff;padding:10px 24px;border-radius:24px;font-size:14px;z-index:999;opacity:0;pointer-events:none}
+  .toast.show{opacity:1}
+
+  /* 桌数输入 */
+  .table-count-row{display:flex;align-items:center;padding:10px 12px;background:#fdf8f5;border-bottom:1px dashed var(--border)}
+  .table-count-row .label-text{font-size:13px;color:var(--text);font-weight:600;margin-right:8px;white-space:nowrap}
+  .table-count-input{width:60px;border:1px solid var(--border);border-radius:8px;padding:4px 8px;font-size:14px;font-weight:700;color:var(--primary);text-align:center;background:#fff;outline:none}
+  .table-count-row .unit-text{font-size:13px;color:var(--text-sub);margin-left:6px}
+  .table-count-row .hint-text{font-size:11px;color:var(--primary-light);margin-left:auto}
+
+  /* ===== 手机端适配 ===== */
+  @media screen and (max-width: 375px) {
+    .dish-info,.staff-info{min-width:0;overflow:hidden}
+    .dish-name,.staff-name{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .staff-desc{font-size:10px}
+    .price-input{width:48px}
+    .nav-slogan{display:none}
+  }
+</style>
+</head>
+<body>
+
+<!-- 顶部导航 -->
+<div class="top-nav">
+  <div class="nav-row">
+    <div class="nav-left">
+      <svg class="nav-logo" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="18" cy="18" r="16" fill="rgba(255,255,255,0.25)" stroke="rgba(255,255,255,0.5)" stroke-width="1"/>
+        <path d="M8 18c0 5.5 4.5 10 10 10s10-4.5 10-10H8z" fill="rgba(255,255,255,0.92)"/>
+        <path d="M10 18c0 4.4 3.6 8 8 8s8-3.6 8-8" fill="none" stroke="rgba(192,80,58,0.3)" stroke-width="1"/>
+        <path d="M14 13c0-2 1-3 0-5" stroke="rgba(255,255,255,0.88)" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M18 12c0-2 1-3 0-5" stroke="rgba(255,255,255,0.88)" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M22 13c0-2 1-3 0-5" stroke="rgba(255,255,255,0.88)" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="24" y1="8" x2="28" y2="20" stroke="rgba(255,255,255,0.92)" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="26" y1="8" x2="30" y2="19" stroke="rgba(255,255,255,0.92)" stroke-width="1.5" stroke-linecap="round"/>
+        <text x="14" y="22" fill="#d4654a" font-size="7" font-weight="700" font-family="PingFang SC,sans-serif">宴</text>
+      </svg>
+      <span class="nav-title">乡宴管家</span>
+    </div>
+    <span class="nav-slogan">电子开菜单 专业又省力</span>
+  </div>
+</div>
+
+<!-- 桌数设置 -->
+<div class="section" style="margin-top:14px">
+  <div class="section-header">
+    <span class="icon">📋</span>
+    宴席基本信息
+    <span class="sub">设置宴席规模</span>
+  </div>
+  <div class="section-body">
+    <div class="table-count-row">
+      <span class="label-text">承办机构：</span>
+      <input type="text" value="广州喜家宴团队" disabled style="flex:1;border:1px solid #f0d8d0;border-radius:8px;padding:4px 10px;font-size:13px;background:#fdf8f5;color:#3d2b1f;font-weight:600;outline:none">
+    </div>
+    <div class="table-count-row">
+      <span class="label-text">宴席桌数：</span>
+      <input class="table-count-input" type="number" id="tableCount" value="12" min="1" max="999" oninput="calcAll()">
+      <span class="unit-text">桌</span>
+      <span class="hint-text" id="tableHint">共约 120 人就餐</span>
+    </div>
+    <div class="table-count-row" style="border-bottom:none">
+      <span class="label-text">联系人姓名：</span>
+      <input type="text" id="contactName" value="周先生" placeholder="请输入客户姓名" style="flex:1;border:1px solid #f0d8d0;border-radius:8px;padding:4px 10px;font-size:13px;background:#fff;outline:none;color:#3d2b1f">
+    </div>
+  </div>
+</div>
+
+<!-- 一、菜品选择板块 -->
+<div class="section" style="margin-top:14px">
+  <div class="section-header">
+    <span class="icon">🍽️</span>
+    宴席菜品
+    <span class="sub" id="dishSubTotal">小计：¥0</span>
+  </div>
+  <div class="section-body">
+    <div class="dish-list" id="dishList"></div>
+  </div>
+</div>
+
+<!-- 二、餐具配套板块 -->
+<div class="section" style="margin-top:14px">
+  <div class="section-header">
+    <span class="icon">🥢</span>
+    餐具配套
+    <span class="sub" id="utensilSubTotal">小计：¥0</span>
+  </div>
+  <div class="section-body">
+    <div class="utensil-list" id="utensilList"></div>
+  </div>
+</div>
+
+<!-- 三、服务人员板块 -->
+<div class="section" style="margin-top:14px">
+  <div class="section-header">
+    <span class="icon">👨‍🍳</span>
+    服务人员
+    <span class="sub" id="staffSubTotal">小计：¥0</span>
+  </div>
+  <div class="section-body">
+    <div class="staff-list" id="staffList"></div>
+  </div>
+</div>
+
+<div style="height:20px"></div>
+
+<!-- 底部汇总悬浮栏 -->
+<div class="summary-bar">
+  <div class="summary-mini" onclick="toggleSummary()">
+    <div class="summary-mini-left">
+      <div>
+        <div class="summary-mini-label">整场宴席总报价 <span class="toggle-arrow" id="arrow">▲</span></div>
+        <div class="summary-mini-items" id="summaryItems">菜品+餐具+人员</div>
+      </div>
+      <div class="summary-total">
+        <div class="summary-mini-total" id="grandTotal">¥0</div>
+      </div>
+    </div>
+    <button class="share-btn" onclick="event.stopPropagation();openModal()">📋 生成报价单</button>
+  </div>
+  <div class="summary-detail" id="summaryDetail">
+    <div class="summary-row"><span class="label">🍽️ 菜品费用</span><span id="sd_dish">¥0</span></div>
+    <div class="summary-row"><span class="label">🥢 餐具费用</span><span id="sd_utensil">¥0</span></div>
+    <div class="summary-row"><span class="label">👨‍🍳 人员服务费</span><span id="sd_staff">¥0</span></div>
+    <div class="summary-row total-row"><span class="label">整场宴席合计</span><span id="sd_total">¥0</span></div>
+  </div>
+</div>
+
+<!-- 报价单弹窗 -->
+<div class="modal-mask" id="modalMask" onclick="closeModal(event)">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title">
+        <svg width="24" height="24" viewBox="0 0 36 36" fill="none"><circle cx="18" cy="18" r="16" fill="rgba(255,255,255,0.35)"/><path d="M8 18c0 5.5 4.5 10 10 10s10-4.5 10-10H8z" fill="rgba(255,255,255,0.92)"/><path d="M14 13c0-2 1-3 0-5" stroke="rgba(255,255,255,0.88)" stroke-width="1.5" stroke-linecap="round"/><path d="M18 12c0-2 1-3 0-5" stroke="rgba(255,255,255,0.88)" stroke-width="1.5" stroke-linecap="round"/><path d="M22 13c0-2 1-3 0-5" stroke="rgba(255,255,255,0.88)" stroke-width="1.5" stroke-linecap="round"/><line x1="24" y1="8" x2="28" y2="20" stroke="rgba(255,255,255,0.92)" stroke-width="1.5" stroke-linecap="round"/><line x1="26" y1="8" x2="30" y2="19" stroke="rgba(255,255,255,0.92)" stroke-width="1.5" stroke-linecap="round"/></svg>
+        宴席报价单
+      </div>
+      <div class="modal-sub">广州喜家宴团队 · 详细明细</div>
+      <button class="modal-close" onclick="closeModal()">&times;</button>
+    </div>
+    <div class="quote-body" id="quoteBody"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// ES5 Polyfills — 兼容旧版微信浏览器
+// ============================================================
+if (!Array.prototype.find) {
+  Array.prototype.find = function(fn) {
+    for (var i = 0; i < this.length; i++) { if (fn(this[i], i, this)) return this[i]; }
+  };
+}
+if (!Array.prototype.map) {
+  Array.prototype.map = function(fn) {
+    var a = [];
+    for (var i = 0; i < this.length; i++) a.push(fn(this[i], i, this));
+    return a;
+  };
+}
+if (!String.prototype.padStart) {
+  String.prototype.padStart = function(len, ch) {
+    var s = String(ch || ' ');
+    while (this.length + s.length < len) s += s;
+    return (s + this).slice(-len);
+  };
+}
+
+// ============================================================
+// 数据
+// ============================================================
+var DISHES = [
+  {id:'d1',name:'白切清远鸡',  price:168,unit:'只',emoji:'🐔',bg:'bg-chicken', desc:'清远走地鸡，皮爽肉滑'},
+  {id:'d2',name:'清蒸石斑鱼',  price:288,unit:'条',emoji:'🐟',bg:'bg-fish',    desc:'鲜活石斑，蒜蓉清蒸'},
+  {id:'d3',name:'广式烧鹅',    price:198,unit:'只',emoji:'🦆',bg:'bg-goose',   desc:'皮脆肉嫩，梅子酱佐食'},
+  {id:'d4',name:'红烧乳鸽',    price:88, unit:'只',emoji:'🐦',bg:'bg-pigeon',  desc:'脆皮红烧，两人一份'},
+  {id:'d5',name:'蒜蓉粉丝蒸扇贝',price:68,unit:'打',emoji:'🦪',bg:'bg-scallop',desc:'鲜活扇贝，蒜香四溢'},
+  {id:'d6',name:'梅菜扣五花肉',price:78, unit:'份',emoji:'🥩',bg:'bg-pork',    desc:'梅州梅菜，入口即化'},
+  {id:'d7',name:'白灼九节虾',  price:238,unit:'斤',emoji:'🦐',bg:'bg-shrimp',  desc:'鲜活九节虾，原味白灼'},
+  {id:'d8',name:'沙姜炒猪肚',  price:88, unit:'份',emoji:'🥘',bg:'bg-tripe',   desc:'广式沙姜，猪肚脆嫩'},
+  {id:'d9',name:'蚝油生菜',    price:28, unit:'份',emoji:'🥬',bg:'bg-veg',     desc:'新鲜生菜，蚝油浇淋'},
+  {id:'d10',name:'冬瓜鸭汤',   price:58, unit:'煲',emoji:'🍲',bg:'bg-soup',    desc:'老鸭煲汤，清热解暑'},
+  {id:'d11',name:'扬州炒饭',   price:18, unit:'人',emoji:'🍚',bg:'bg-rice',    desc:'蛋炒饭，粒粒分明'},
+  {id:'d12',name:'广式甜品拼盘',price:38, unit:'份',emoji:'🍮',bg:'bg-dessert', desc:'双皮奶+红豆沙+马蹄糕'}
+];
+
+var UTENSILS = [
+  {id:'u1',name:'精致碗筷套餐',       emoji:'🥢',bg:'bg-chopstick',unit:'套/桌',price:8},
+  {id:'u2',name:'骨碟/味碟套装',      emoji:'🍽️',bg:'bg-plate',   unit:'套/桌',price:6},
+  {id:'u3',name:'白色圆形餐桌（1.5m）',emoji:'🪞',bg:'bg-table',   unit:'张',price:40},
+  {id:'u4',name:'靠背椅（租用）',      emoji:'🪑',bg:'bg-chair',   unit:'把',price:5},
+  {id:'u5',name:'白色简约桌布',        emoji:'🤍',bg:'bg-cloth',   unit:'张',price:10},
+  {id:'u6',name:'酒杯碗碟套装',       emoji:'🥂',bg:'bg-glass',   unit:'套/桌',price:15},
+  {id:'u7',name:'不锈钢保温炉',       emoji:'🔥',bg:'bg-stove',   unit:'个',price:35},
+  {id:'u8',name:'遮阳棚/雨棚',        emoji:'⛺',bg:'bg-canopy',  unit:'顶',price:80}
+];
+
+var STAFF = [
+  {id:'s1',name:'司仪主持人',     emoji:'🎤',avatarClass:'mc',    desc:'主持宴席全程流程，氛围把控',price:500},
+  {id:'s2',name:'主厨（粤菜师傅）',emoji:'👨‍🍳',avatarClass:'chef', desc:'20年粤菜经验，主理宴席菜品',price:800},
+  {id:'s3',name:'副厨',           emoji:'🧑‍🍳',avatarClass:'chef',  desc:'协助主厨备料、切配',price:350},
+  {id:'s4',name:'现场服务员',     emoji:'🙋',avatarClass:'waiter',desc:'传菜、桌面服务、斟茶倒水',price:250},
+  {id:'s5',name:'场务搭建员',     emoji:'🔧',avatarClass:'assist',desc:'场地搭建、拆台、清洁',price:200},
+  {id:'s6',name:'洗碗工',        emoji:'🧽',avatarClass:'assist',desc:'餐后洗碗、餐具回收清洁',price:180}
+];
+
+// ============================================================
+// 状态
+// ============================================================
+var state = { dishes:{}, utensils:{}, staff:{} };
+for (var si = 0; si < STAFF.length; si++) { state.staff[STAFF[si].id] = {qty:0, price:STAFF[si].price}; }
+for (var ui = 0; ui < UTENSILS.length; ui++) { state.utensils[UTENSILS[ui].id] = 0; }
+for (var di = 0; di < DISHES.length; di++) { state.dishes[DISHES[di].id] = 0; }
+
+// ============================================================
+// 工具函数：查找数组元素（ES5安全）
+// ============================================================
+function findDish(id) {
+  for (var i = 0; i < DISHES.length; i++) { if (DISHES[i].id === id) return DISHES[i]; }
+  return null;
+}
+function findUtensil(id) {
+  for (var i = 0; i < UTENSILS.length; i++) { if (UTENSILS[i].id === id) return UTENSILS[i]; }
+  return null;
+}
+function findStaff(id) {
+  for (var i = 0; i < STAFF.length; i++) { if (STAFF[i].id === id) return STAFF[i]; }
+  return null;
+}
+
+// ============================================================
+// 渲染菜品
+// ============================================================
+function renderDishes() {
+  var list = document.getElementById('dishList');
+  if (!list) return;
+  var html = '';
+  for (var i = 0; i < DISHES.length; i++) {
+    var d = DISHES[i];
+    html += '<div class="dish-item" id="di_' + d.id + '">'
+      + '<div class="icon-card ' + d.bg + '" onclick="toggleDish(\'' + d.id + '\')">' + d.emoji + '</div>'
+      + '<div class="dish-info" onclick="toggleDish(\'' + d.id + '\')">'
+      + '<div class="dish-name">' + d.name + '</div>'
+      + '<div class="dish-desc">' + d.desc + '</div>'
+      + '<div class="dish-price">&yen;<span>' + d.price + '</span>/' + d.unit + '</div>'
+      + '</div>'
+      + '<div class="dish-right">'
+      + '<div class="dish-sub inactive" id="ds_' + d.id + '">&yen;0</div>'
+      + '<div class="qty-ctrl">'
+      + '<button class="qty-btn" onclick="changeDishQty(\'' + d.id + '\',-1)">&minus;</button>'
+      + '<div class="qty-num" id="dq_' + d.id + '">0</div>'
+      + '<button class="qty-btn" onclick="changeDishQty(\'' + d.id + '\',1)">+</button>'
+      + '</div></div></div>';
+  }
+  list.innerHTML = html;
+}
+
+function toggleDish(id) {
+  if (state.dishes[id] === 0) state.dishes[id] = 1;
+  updateDishCard(id);
+  calcAll();
+}
+function changeDishQty(id, delta) {
+  state.dishes[id] = Math.max(0, (state.dishes[id]||0) + delta);
+  updateDishCard(id);
+  calcAll();
+}
+function updateDishCard(id) {
+  var qty = state.dishes[id] || 0;
+  var dish = findDish(id);
+  if (!dish) return;
+  document.getElementById('dq_'+id).textContent = qty;
+  var sub = document.getElementById('ds_'+id);
+  var item = document.getElementById('di_'+id);
+  if (qty > 0) {
+    sub.textContent = '\u00a5' + (qty*dish.price);
+    sub.className = 'dish-sub';
+    item.className = 'dish-item selected';
+  } else {
+    sub.textContent = '\u00a50';
+    sub.className = 'dish-sub inactive';
+    item.className = 'dish-item';
+  }
+}
+
+// ============================================================
+// 渲染餐具
+// ============================================================
+function renderUtensils() {
+  var list = document.getElementById('utensilList');
+  if (!list) return;
+  var html = '';
+  for (var i = 0; i < UTENSILS.length; i++) {
+    var u = UTENSILS[i];
+    html += '<div class="utensil-item">'
+      + '<div class="icon-card ' + u.bg + '">' + u.emoji + '</div>'
+      + '<div class="utensil-info">'
+      + '<div class="utensil-name">' + u.name + '</div>'
+      + '<div class="utensil-price">&yen;' + u.price + '/' + u.unit + '</div>'
+      + '</div>'
+      + '<div class="utensil-right">'
+      + '<div class="utensil-sub" id="us_' + u.id + '" style="color:#b0988e">&yen;0</div>'
+      + '<div class="u-qty-ctrl">'
+      + '<button class="u-qty-btn" onclick="changeUtensilQty(\'' + u.id + '\',-1)">&minus;</button>'
+      + '<div class="u-qty-num" id="uq_' + u.id + '">0</div>'
+      + '<button class="u-qty-btn" onclick="changeUtensilQty(\'' + u.id + '\',1)">+</button>'
+      + '</div></div></div>';
+  }
+  list.innerHTML = html;
+}
+function changeUtensilQty(id, delta) {
+  state.utensils[id] = Math.max(0, (state.utensils[id]||0) + delta);
+  var u = findUtensil(id);
+  if (!u) return;
+  var qty = state.utensils[id];
+  document.getElementById('uq_'+id).textContent = qty;
+  var sub = document.getElementById('us_'+id);
+  sub.textContent = '\u00a5' + (qty*u.price);
+  sub.style.color = qty > 0 ? '#d4654a' : '#b0988e';
+  calcAll();
+}
+
+// ============================================================
+// 渲染人员
+// ============================================================
+function renderStaff() {
+  var list = document.getElementById('staffList');
+  if (!list) return;
+  var html = '';
+  for (var i = 0; i < STAFF.length; i++) {
+    var s = STAFF[i];
+    html += '<div class="staff-item">'
+      + '<div class="staff-avatar ' + s.avatarClass + '">' + s.emoji + '</div>'
+      + '<div class="staff-info">'
+      + '<div class="staff-name">' + s.name + '</div>'
+      + '<div class="staff-desc">' + s.desc + '</div>'
+      + '</div>'
+      + '<div class="staff-price-input">'
+      + '<div class="staff-sub" id="ss_' + s.id + '" style="color:#b0988e">&yen;0</div>'
+      + '<div class="price-edit">'
+      + '<span class="price-label">&yen;</span>'
+      + '<input class="price-input" id="sp_' + s.id + '" type="number" value="' + s.price + '" oninput="updateStaffPrice(\'' + s.id + '\',this.value)">'
+      + '<span class="price-unit">/人</span>'
+      + '</div>'
+      + '<div class="u-qty-ctrl">'
+      + '<button class="u-qty-btn" onclick="changeStaffQty(\'' + s.id + '\',-1)">&minus;</button>'
+      + '<div class="u-qty-num" id="sq_' + s.id + '">0</div>'
+      + '<button class="u-qty-btn" onclick="changeStaffQty(\'' + s.id + '\',1)">+</button>'
+      + '</div></div></div>';
+  }
+  list.innerHTML = html;
+}
+function changeStaffQty(id, delta) {
+  state.staff[id].qty = Math.max(0, state.staff[id].qty + delta);
+  document.getElementById('sq_'+id).textContent = state.staff[id].qty;
+  updateStaffSub(id);
+  calcAll();
+}
+function updateStaffPrice(id, val) {
+  state.staff[id].price = parseFloat(val)||0;
+  updateStaffSub(id);
+  calcAll();
+}
+function updateStaffSub(id) {
+  var info = state.staff[id];
+  var sub = document.getElementById('ss_'+id);
+  sub.textContent = '\u00a5' + (info.qty*info.price);
+  sub.style.color = info.qty > 0 ? '#d4654a' : '#b0988e';
+}
+
+// ============================================================
+// 计算总价
+// ============================================================
+function calcAll() {
+  var tables = parseInt(document.getElementById('tableCount').value)||0;
+  document.getElementById('tableHint').textContent = '\u5171\u7ea6 ' + (tables*10) + ' \u4eba\u5c31\u9910';
+
+  var dishTotal = 0, i;
+  for (i = 0; i < DISHES.length; i++) { dishTotal += (state.dishes[DISHES[i].id]||0)*DISHES[i].price*tables; }
+  var utensilTotal = 0;
+  for (i = 0; i < UTENSILS.length; i++) { utensilTotal += (state.utensils[UTENSILS[i].id]||0)*UTENSILS[i].price; }
+  var staffTotal = 0;
+  for (i = 0; i < STAFF.length; i++) { staffTotal += state.staff[STAFF[i].id].qty*state.staff[STAFF[i].id].price; }
+  var grand = dishTotal + utensilTotal + staffTotal;
+
+  document.getElementById('dishSubTotal').textContent = '\u5c0f\u8ba1\uff1a\u00a5' + dishTotal.toLocaleString();
+  document.getElementById('utensilSubTotal').textContent = '\u5c0f\u8ba1\uff1a\u00a5' + utensilTotal.toLocaleString();
+  document.getElementById('staffSubTotal').textContent = '\u5c0f\u8ba1\uff1a\u00a5' + staffTotal.toLocaleString();
+  document.getElementById('grandTotal').textContent = '\u00a5' + grand.toLocaleString();
+  document.getElementById('sd_dish').textContent = '\u00a5' + dishTotal.toLocaleString();
+  document.getElementById('sd_utensil').textContent = '\u00a5' + utensilTotal.toLocaleString();
+  document.getElementById('sd_staff').textContent = '\u00a5' + staffTotal.toLocaleString();
+  document.getElementById('sd_total').textContent = '\u00a5' + grand.toLocaleString();
+
+  var dc=0, uc=0, sc=0;
+  for (i=0;i<DISHES.length;i++){if(state.dishes[DISHES[i].id]>0)dc++;}
+  for (i=0;i<UTENSILS.length;i++){if(state.utensils[UTENSILS[i].id]>0)uc++;}
+  for (i=0;i<STAFF.length;i++){if(state.staff[STAFF[i].id].qty>0)sc++;}
+  document.getElementById('summaryItems').textContent = '\u5df2\u9009 '+dc+'\u79cd\u83dc\u54c1 \u00b7 '+uc+'\u79cd\u9910\u5177 \u00b7 '+sc+'\u7c7b\u4eba\u5458';
+}
+
+// ============================================================
+// 汇总展开/收起
+// ============================================================
+var summaryOpen = false;
+function toggleSummary() {
+  summaryOpen = !summaryOpen;
+  var detail = document.getElementById('summaryDetail');
+  var arrow = document.getElementById('arrow');
+  if (summaryOpen) {
+    detail.style.display = 'block';
+    detail.className = 'summary-detail open';
+  } else {
+    detail.style.display = 'none';
+    detail.className = 'summary-detail';
+  }
+}
+
+// ============================================================
+// 生成报价单弹窗
+// ============================================================
+function openModal() {
+  var tables = parseInt(document.getElementById('tableCount').value)||0;
+  var contact = document.getElementById('contactName').value || '\uff08\u672a\u586b\u5199\uff09';
+  var now = new Date();
+  var m = now.getMonth()+1; if(m<10) m='0'+m;
+  var d = now.getDate(); if(d<10) d='0'+d;
+  var dateStr = now.getFullYear()+'\u5e74'+m+'\u6708'+d+'\u65e5';
+  var y = String(now.getFullYear()).slice(2);
+  var noStr = 'XJY'+y+m+d+'-'+Math.floor(Math.random()*900+100);
+
+  var dishTotal=0, utensilTotal=0, staffTotal=0, i;
+  var dishRows='', utensilRows='', staffRows='';
+
+  // 菜品
+  var hasDish = false;
+  for (i=0;i<DISHES.length;i++) {
+    if (state.dishes[DISHES[i].id]>0) {
+      hasDish = true;
+      var dd = DISHES[i]; var qty = state.dishes[dd.id]; var sub = qty*dd.price*tables; dishTotal += sub;
+      dishRows += '<div class="quote-item"><span class="name">'+dd.emoji+' '+dd.name+'</span><span class="qty">'+qty+dd.unit+'&times;'+tables+'\u684c</span><span class="sub">&yen;'+sub.toLocaleString()+'</span></div>';
+    }
+  }
+  if (!hasDish) dishRows = '<div class="quote-item"><span class="name" style="color:#b0988e">\u6682\u672a\u9009\u62e9\u83dc\u54c1</span></div>';
+
+  // 餐具
+  var hasUten = false;
+  for (i=0;i<UTENSILS.length;i++) {
+    if (state.utensils[UTENSILS[i].id]>0) {
+      hasUten = true;
+      var uu = UTENSILS[i]; var uqty = state.utensils[uu.id]; var usub = uqty*uu.price; utensilTotal += usub;
+      dishRows; // noop
+      utensilRows += '<div class="quote-item"><span class="name">'+uu.emoji+' '+uu.name+'</span><span class="qty">'+uqty+'\u4ef6</span><span class="sub">&yen;'+usub.toLocaleString()+'</span></div>';
+    }
+  }
+  if (!hasUten) utensilRows = '<div class="quote-item"><span class="name" style="color:#b0988e">\u6682\u672a\u9009\u62e9\u9910\u5177</span></div>';
+
+  // 人员
+  var hasStaff = false;
+  for (i=0;i<STAFF.length;i++) {
+    if (state.staff[STAFF[i].id].qty>0) {
+      hasStaff = true;
+      var ss = STAFF[i]; var sqty = state.staff[ss.id].qty; var ssub = sqty*state.staff[ss.id].price; staffTotal += ssub;
+      staffRows += '<div class="quote-item"><span class="name">'+ss.emoji+' '+ss.name+'</span><span class="qty">'+sqty+'\u4eba</span><span class="sub">&yen;'+ssub.toLocaleString()+'</span></div>';
+    }
+  }
+  if (!hasStaff) staffRows = '<div class="quote-item"><span class="name" style="color:#b0988e">\u6682\u672a\u5b89\u6392\u4eba\u5458</span></div>';
+
+  var grand = dishTotal + utensilTotal + staffTotal;
+
+  var html = '<div class="quote-brand">'
+    + '<div class="quote-brand-name">\u4e61\u5bb4\u7ba1\u5bb6</div>'
+    + '<div class="quote-brand-tag">\u5e7f\u5dde\u559c\u5bb6\u5bb4\u56e2\u961f &middot; \u4e13\u4e1a\u5bb4\u5e2d\u627f\u529e\u670d\u52a1</div>'
+    + '<div class="quote-no"><span>\u5ba2\u6237\uff1a'+contact+'</span><span>\u5355\u53f7\uff1a'+noStr+'</span></div>'
+    + '<div class="quote-no"><span>'+tables+'\u684c\uff08\u7ea6'+(tables*10)+'\u4eba\uff09</span><span>'+dateStr+'</span></div>'
+    + '</div>'
+    + '<div class="quote-section"><div class="quote-section-title">\ud83c\udf7d\ufe0f \u83dc\u54c1\u660e\u7ec6</div>'+dishRows
+    +(hasDish?'<div class="quote-item" style="font-weight:700"><span class="name" style="color:#3d2b1f">\u83dc\u54c1\u5c0f\u8ba1</span><span class="qty"></span><span class="sub" style="font-size:14px">&yen;'+dishTotal.toLocaleString()+'</span></div>':'')
+    +'</div>'
+    +'<div class="quote-section"><div class="quote-section-title">\ud83e\udd62 \u9910\u5177\u914d\u5957\u660e\u7ec6</div>'+utensilRows
+    +(hasUten?'<div class="quote-item" style="font-weight:700"><span class="name" style="color:#3d2b1f">\u9910\u5177\u5c0f\u8ba1</span><span class="qty"></span><span class="sub" style="font-size:14px">&yen;'+utensilTotal.toLocaleString()+'</span></div>':'')
+    +'</div>'
+    +'<div class="quote-section"><div class="quote-section-title">\ud83d\udc68\u200d\ud83c\udf73 \u670d\u52a1\u4eba\u5458\u660e\u7ec6</div>'+staffRows
+    +(hasStaff?'<div class="quote-item" style="font-weight:700"><span class="name" style="color:#3d2b1f">\u4eba\u5458\u5c0f\u8ba1</span><span class="qty"></span><span class="sub" style="font-size:14px">&yen;'+staffTotal.toLocaleString()+'</span></div>':'')
+    +'</div>'
+    +'<div class="quote-total-box">'
+    +'<div class="quote-total-row"><span class="label">\ud83c\udf7d\ufe0f \u83dc\u54c1\u8d39\u7528</span><span class="val">&yen;'+dishTotal.toLocaleString()+'</span></div>'
+    +'<div class="quote-total-row"><span class="label">\ud83e\udd62 \u9910\u5177\u8d39\u7528</span><span class="val">&yen;'+utensilTotal.toLocaleString()+'</span></div>'
+    +'<div class="quote-total-row"><span class="label">\ud83d\udc68\u200d\ud83c\udf73 \u4eba\u5458\u670d\u52a1\u8d39</span><span class="val">&yen;'+staffTotal.toLocaleString()+'</span></div>'
+    +'<div class="quote-grand">'
+    +'<div><div class="quote-grand-label">\u6574\u573a\u5bb4\u5e2d\u603b\u62a5\u4ef7</div><div style="font-size:11px;color:#7a5c4f;margin-top:2px">'+tables+'\u684c\u5bb4\u5e2d\u4e00\u53e3\u4ef7</div></div>'
+    +'<div class="quote-grand-val">&yen;<span>'+grand.toLocaleString()+'</span></div>'
+    +'</div></div>'
+    +'<div class="quote-footer">\u4ee5\u4e0a\u62a5\u4ef7\u7531 <strong>\u4e61\u5bb4\u7ba1\u5bb6</strong> \u7cfb\u7edf\u751f\u6210<br>\u627f\u529e\u65b9\uff1a\u5e7f\u5dde\u559c\u5bb6\u5bb4\u56e2\u961f &middot; \u5982\u9700\u8c03\u6574\u8bf7\u8054\u7cfb\u5546\u5bb6</div>'
+    +'<div class="quote-actions">'
+    +'<button class="btn-outline" onclick="copyQuote('+grand+')">\ud83d\udccb \u590d\u5236\u62a5\u4ef7</button>'
+    +'<button class="btn-primary" onclick="shareQuote()">\ud83d\udce4 \u5206\u4eab\u7ed9\u5ba2\u6237</button>'
+    +'</div>';
+
+  document.getElementById('quoteBody').innerHTML = html;
+  document.getElementById('modalMask').style.display = 'block';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal(e) {
+  document.getElementById('modalMask').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+// ============================================================
+// 分享功能
+// ============================================================
+function copyQuote(grand) {
+  var tables = parseInt(document.getElementById('tableCount').value)||0;
+  var contact = document.getElementById('contactName').value;
+  var text = '\u3010\u4e61\u5bb4\u7ba1\u5bb6 \u00b7 \u5bb4\u5e2d\u62a5\u4ef7\u5355\u3011\n\u627f\u529e\u65b9\uff1a\u5e7f\u5dde\u559c\u5bb6\u5bb4\u56e2\u961f\n========================\n';
+  if (contact) text += '\u5ba2\u6237\uff1a'+contact+'\n';
+  text += '\u5bb4\u5e2d\u89c4\u6a21\uff1a'+tables+'\u684c\n\n';
+  text += '========================\n\u6574\u573a\u5bb4\u5e2d\u603b\u62a5\u4ef7\uff1a\u00a5'+grand.toLocaleString()+'\n\uff08\u7531\u4e61\u5bb4\u7ba1\u5bb6\u7cfb\u7edf\u751f\u6210\uff09';
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function(){showToast('\u62a5\u4ef7\u5df2\u590d\u5236');}).catch(function(){showToast('\u8bf7\u624b\u52a8\u590d\u5236');});
+  } else { showToast('\u8bf7\u622a\u56fe\u5206\u4eab\u62a5\u4ef7\u5355'); }
+}
+function shareQuote() {
+  var tables = parseInt(document.getElementById('tableCount').value)||0;
+  var contact = document.getElementById('contactName').value;
+  var shareText = '\u3010\u4e61\u5bb4\u7ba1\u5bb6\u62a5\u4ef7\u5355\u3011\n\u627f\u529e\u65b9\uff1a\u5e7f\u5dde\u559c\u5bb6\u5bb4\u56e2\u961f\n'+(contact?'\u5ba2\u6237\uff1a'+contact+'\n':'')+'\u5bb4\u5e2d\u89c4\u6a21\uff1a'+tables+'\u684c\n\n\u8bf7\u8054\u7cfb\u5546\u5bb6\u83b7\u53d6\u5b8c\u6574\u660e\u7ec6';
+  if (navigator.share) { try{navigator.share({title:'\u4e61\u5bb4\u7ba1\u5bb6\u62a5\u4ef7\u5355',text:shareText});}catch(e){} }
+  else if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(shareText).then(function(){showToast('\u62a5\u4ef7\u5df2\u590d\u5236\uff01');}); }
+  else { showToast('\u8bf7\u622a\u56fe\u5206\u4eab\u62a5\u4ef7\u5355'); }
+}
+
+// ============================================================
+// Toast
+// ============================================================
+function showToast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.opacity = '1';
+  setTimeout(function(){t.style.opacity='0';}, 2800);
+}
+
+// ============================================================
+// 预选12桌婚宴配置
+// ============================================================
+function preSelect() {
+  var ids = ['d1','d2','d3','d4','d5','d6','d7','d8','d9','d10','d11','d12'];
+  for (var i = 0; i < ids.length; i++) {
+    state.dishes[ids[i]] = 1;
+    updateDishCard(ids[i]);
+  }
+  state.utensils['u1'] = 12; state.utensils['u2'] = 12; state.utensils['u3'] = 12;
+  state.utensils['u4'] = 120; state.utensils['u5'] = 12; state.utensils['u6'] = 12;
+  state.utensils['u7'] = 4;  state.utensils['u8'] = 3;
+  for (var j = 0; j < UTENSILS.length; j++) {
+    var u = UTENSILS[j];
+    document.getElementById('uq_'+u.id).textContent = state.utensils[u.id];
+    document.getElementById('us_'+u.id).textContent = '\u00a5' + (state.utensils[u.id]*u.price);
+    document.getElementById('us_'+u.id).style.color = '#d4654a';
+  }
+  state.staff['s2'].qty = 1; state.staff['s3'].qty = 2; state.staff['s4'].qty = 4;
+  state.staff['s5'].qty = 2; state.staff['s6'].qty = 1;
+  for (var k = 0; k < STAFF.length; k++) {
+    document.getElementById('sq_'+STAFF[k].id).textContent = state.staff[STAFF[k].id].qty;
+    updateStaffSub(STAFF[k].id);
+  }
+  calcAll();
+}
+
+// ============================================================
+// 初始化
+// ============================================================
+function init() {
+  renderDishes();
+  renderUtensils();
+  renderStaff();
+  calcAll();
+  preSelect();
+}
+
+// 兼容性最好的初始化
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
+</script>
+</body>
+</html>
